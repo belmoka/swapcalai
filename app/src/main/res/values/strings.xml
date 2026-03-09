@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SwapCal Ai</string>
+    <string name="url">http://192.168.11.100:3000</string>
+</resources>

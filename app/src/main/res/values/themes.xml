@@ -1,0 +1,27 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+<!--    <style name="Base.Theme.SwapCalAi" parent="Theme.Material3.DayNight.NoActionBar">-->
+<!--        &lt;!&ndash; Customize your light theme here. &ndash;&gt;-->
+<!--        &lt;!&ndash; <item name="colorPrimary">@color/my_light_primary</item> &ndash;&gt;-->
+<!--    </style>-->
+
+<!--    <style name="Theme.SwapCalAi" parent="Base.Theme.SwapCalAi" />-->
+
+
+        <style name="Base.Theme.SwapCalAi" parent="Theme.Material3.DayNight.NoActionBar">
+
+            <item name="colorPrimary">@color/primary</item>
+            <item name="colorOnPrimary">@color/onPrimary</item>
+
+            <item name="colorSecondary">@color/secondary</item>
+            <item name="colorOnSecondary">@color/onSecondary</item>
+
+            <item name="android:colorBackground">@color/background</item>
+            <item name="colorSurface">@color/surface</item>
+            <item name="colorOnSurface">@color/onSurface</item>
+
+        </style>5
+
+        <style name="Theme.SwapCalAi" parent="Base.Theme.SwapCalAi" />
+
+</resources>

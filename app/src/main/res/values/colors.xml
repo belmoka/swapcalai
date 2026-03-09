@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--<resources>-->
+<!--    <color name="black">#FF000000</color>-->
+<!--    <color name="white">#FFFFFFFF</color>-->
+<!--</resources>-->
+
+<resources>
+    <color name="primary">#0f172b</color>
+    <color name="onPrimary">#FFFFFF</color>
+
+    <color name="secondary">#00bc7d</color>
+    <color name="onSecondary">#FFFFFF</color>
+
+    <color name="background">#F8FAFC</color>
+    <color name="onBackground">#111827</color>
+
+    <color name="surface">#FFFFFF</color>
+    <color name="onSurface">#111827</color>
+</resources>
