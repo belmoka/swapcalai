@@ -17,8 +17,8 @@ object AdManager {
     private const val TAG = "AdManager"
 
     // Test IDs — replace with production IDs
-    private const val INTERSTITIAL_ID = "ca-app-pub-3940256099942544/1033173712"
-    private const val REWARDED_ID = "ca-app-pub-3940256099942544/5224354917"
+    private const val INTERSTITIAL_ID = "ca-app-pub-7081526478061042/1029713155"
+    private const val REWARDED_ID = "ca-app-pub-7081526478061042/2685429819"
 
     private var interstitialAd: InterstitialAd? = null
     private var rewardedAd: RewardedAd? = null

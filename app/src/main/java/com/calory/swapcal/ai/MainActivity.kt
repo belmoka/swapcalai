@@ -2,35 +2,31 @@ package com.calory.swapcal.ai
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
-import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
-import android.webkit.WebView.setWebContentsDebuggingEnabled
 import android.webkit.WebViewClient
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
+import kotlinx.coroutines.CoroutineStart
+import java.io.ByteArrayOutputStream
+import kotlin.io.encoding.Base64
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -104,9 +100,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun openCamera() {
+            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            this@MainActivity.startActivityForResult(intent, 101)
+        }
+
+        @JavascriptInterface
         fun requestPermission() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
 
@@ -122,7 +124,7 @@ class MainActivity : AppCompatActivity() {
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                // Permission granted — you can show notifications
+                // Permission granted —
             } else {
                 // Permission denied
             }
@@ -136,7 +138,7 @@ class MainActivity : AppCompatActivity() {
         AdManager.initialize(this)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
         setContentView(R.layout.activity_main) // 👈 REQUIRED
@@ -149,6 +151,11 @@ class MainActivity : AppCompatActivity() {
         cookieManager.setAcceptThirdPartyCookies(webView, true)
         webView.webChromeClient = object : WebChromeClient() {
 
+            override fun onPermissionRequest(request: PermissionRequest) {
+                runOnUiThread {
+                    request.grant(request.resources)
+                }
+            }
 
             override fun onShowFileChooser(
                 webView: WebView?,
@@ -194,6 +201,25 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 101 && resultCode == RESULT_OK) {
+            val photo = data.extras!!["data"] as Bitmap?
+
+            val stream = ByteArrayOutputStream()
+            photo!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+
+            val base64: String = Base64.encodeToString(stream.toByteArray(), CoroutineStart.DEFAULT)
+
+            webView.evaluateJavascript(
+                "window.onCameraResult('data:image/jpeg;base64,$base64')",
+                null
+            )
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         webView.settings.apply {
@@ -204,6 +230,7 @@ class MainActivity : AppCompatActivity() {
             loadsImagesAutomatically = true
             useWideViewPort = true
             loadWithOverviewMode = true
+            mediaPlaybackRequiresUserGesture = true
             setSupportZoom(false)
 //            setWebContentsDebuggingEnabled(false)
             userAgentString = userAgentString + " MVP_ANDROID"
