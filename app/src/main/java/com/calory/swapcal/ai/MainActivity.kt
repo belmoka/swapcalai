@@ -85,7 +85,6 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun openCheckoutUrl(url: String) {
 
-
         }
 
         @SuppressLint("InlinedApi")
@@ -93,8 +92,16 @@ class MainActivity : AppCompatActivity() {
         fun findPermissionStatus(): Int {
             return ActivityCompat.checkSelfPermission(
                 applicationContext,
-                Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.CAMERA
             )
+        }
+
+        @SuppressLint("InlinedApi")
+        @JavascriptInterface
+        fun requestPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
         }
 
         @JavascriptInterface
@@ -102,10 +109,17 @@ class MainActivity : AppCompatActivity() {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 ActivityCompat.checkSelfPermission(
                     applicationContext,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    Manifest.permission.CAMERA
                 ) == PackageManager.PERMISSION_GRANTED
             } else {
                 true // Permission automatically granted on < API 33
+            }
+        }
+
+        @JavascriptInterface
+        fun requestCameraPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
 
@@ -115,12 +129,7 @@ class MainActivity : AppCompatActivity() {
 
         }
 
-        @JavascriptInterface
-        fun requestPermission() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-            }
-        }
+
 
 
         @JavascriptInterface
@@ -156,9 +165,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
+
 
         setContentView(R.layout.activity_main) // 👈 REQUIRED
 
