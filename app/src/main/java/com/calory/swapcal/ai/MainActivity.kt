@@ -2,6 +2,7 @@ package com.calory.swapcal.ai
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -9,6 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Base64
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
@@ -19,13 +21,18 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.FileProvider
 import com.google.android.gms.ads.MobileAds
 import kotlinx.coroutines.CoroutineStart
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
-import kotlin.io.encoding.Base64
+import java.io.File
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity() {
@@ -34,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 //    lateinit var swipeRefresh : SwipeRefreshLayout
 
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
+
     private val fileChooserLauncher =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
 
@@ -46,6 +54,8 @@ class MainActivity : AppCompatActivity() {
             filePathCallback = null
         }
 
+    private lateinit var cameraLauncher: ActivityResultLauncher<Void?>
+    private lateinit var imageUri: Uri
 
 
     // 3. JS-callable interface — JS can call this anytime after login
@@ -101,8 +111,8 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
         fun openCamera() {
-            val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            this@MainActivity.startActivityForResult(intent, 101)
+            launchCamera()
+
         }
 
         @JavascriptInterface
@@ -132,17 +142,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
 
-        MobileAds.initialize(this);
+        MobileAds.initialize(this)
         AdManager.initialize(this)
+
+        imageUri = createImageUri()
+        cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+            bitmap?.let {
+                val stream = ByteArrayOutputStream()
+                it.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+                val base64 = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT)
+                sendToWebView(base64)
+            }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
 
         setContentView(R.layout.activity_main) // 👈 REQUIRED
-
 
         webView = findViewById(R.id.webView)
 
@@ -171,7 +189,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
-
                 consoleMessage?.let {
                     Log.d(
                         "WebViewConsole",
@@ -201,24 +218,41 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 101 && resultCode == RESULT_OK) {
-            val photo = data.extras!!["data"] as Bitmap?
-
-            val stream = ByteArrayOutputStream()
-            photo!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
-
-            val base64: String = Base64.encodeToString(stream.toByteArray(), CoroutineStart.DEFAULT)
-
-            webView.evaluateJavascript(
-                "window.onCameraResult('data:image/jpeg;base64,$base64')",
-                null
-            )
-        }
+    fun launchCamera() {
+        cameraLauncher.launch(null)
     }
+
+    private fun createImageUri(): Uri {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, "photo_${System.currentTimeMillis()}.jpg")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            // Required for Android 10+
+            put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/SwapCal")
+        }
+
+        return contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            ?: throw IOException("Failed to create new MediaStore record.")
+    }
+
+    private fun uriToBase64(uri: Uri): String {
+        val inputStream = contentResolver.openInputStream(uri)
+        val bytes = inputStream!!.readBytes()
+        return Base64.encodeToString(bytes, Base64.DEFAULT)
+    }
+
+    private fun sendToWebView(base64Data: String) {
+        val dataUri = "data:image/jpeg;base64,$base64Data"
+        webView.evaluateJavascript(
+            "window.onCameraResult(${JSONObject.quote(dataUri)})",
+            null
+        )
+    }
+
+    private fun createTempImageUri(): Uri {
+        val file = File(cacheDir, "temp_photo_${System.currentTimeMillis()}.jpg")
+        return FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+    }
+
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
@@ -254,7 +288,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-//        LocalBroadcastManager.getInstance(this).unregisterReceiver(fcmReceiver)
     }
 
     override fun onBackPressed() {
